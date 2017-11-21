@@ -1,0 +1,67 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="http://malihu.github.io/custom-scrollbar/3.0.0/jquery.mCustomScrollbar.min.css">
+<link rel="stylesheet" href="/css/chat.css" />
+<div class="bs-docs-section">
+  <div id="userFormArea" class="row">
+    <div class="col-lg-3"></div>
+    <div class="col-lg-6 login">
+      <legend>Log-in</legend>
+      <form id="userForm">
+        <div class="form-group">
+          <label for="inputUserName" class="col-lg-2 control-label">Username</label>
+        <div class="input-group">
+          <spna class="input-group-addon input-sm">
+            <span class="glyphicon glyphicon-user "></span>
+          </spna>
+          <input type="text" class="form-control input-sm" id="username" placeholder="Username">
+        </div>
+        </div>        
+        <div class="form-group">
+          <div class="col-lg-offset-2">           
+            <button type="submit" class="btn btn-info btn-sm">Submit</button>
+          </div>
+        </div>       
+      </form>
+    </div>
+    <div class="col-lg-3"></div>
+  </div>
+  <div id="messageArea" class="row">
+    <div class="col-lg-3">
+      <div class="onlieUser">
+        <h3>Online user</h3>
+        <ul class="list-group fa-ul" id="users"></ul>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="chat">
+        <div class="chat-title">
+          <h1><label id="loginUser"></label></h1>
+         
+          <figure class="avatar">
+            <span>
+              <i class="fa fa-user-o" aria-hidden="true"></i>
+            </span>
+          </figure>
+        </div>
+        <div id="chatMessage" class="messages">
+        </div>
+        <div class="message-box">
+          <textarea type="text" class="message-input" placeholder="Type message..."></textarea>
+          <button type="submit" class="message-submit" id="btnSpeech">
+            <i class="fa fa-microphone"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3">
+      <div class="" id="chat"></div>
+      {{!-- <form id="messageForm">
+        <div class="form-group"></div>
+        <label>enter message</label>
+        <textarea class="form-control" id="message"></textarea>
+        <br/>
+        <input type="submit" class="btn btn-primary" value="send" />
+      </form> --}}
+    </div>
+  </div>
+</div>
