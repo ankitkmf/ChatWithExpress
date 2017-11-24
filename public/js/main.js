@@ -9,6 +9,36 @@ $("document").ready(function() {
     var $messageArea = $("#messageArea");
     var $users = $("#users");
 
+    $("#messageArea").on("click", "li.cursor", function() {
+        console.log($(this).data("id"));
+        console.log($(this).data("name"));
+        $(".chat").show();
+        $("#refUser").text($(this).data("name"));
+        $("#refUser").attr("data-id", $(this).data("id"));
+
+        var data = {
+            currentUser: $("#loginUser").data("id"),
+            refUser: $(this).data("id")
+        }
+
+        $.ajax({
+                method: "Post",
+                url: "/data/getchat",
+                data: { user: data }
+            })
+            .done(function(data) {
+                if (data != null && data.length > 0) {
+                    $('.mCSB_container').html('');
+                    $.each(data, function(index, value) {
+                        writeChat(value);
+                    });
+                }
+            })
+            .fail(function() {
+                console.log("Error in chat result:");
+            })
+            .always(function() {});
+    });
     $("#chatMessage").mCustomScrollbar({
         theme: "dark-3"
     });
@@ -21,7 +51,6 @@ $("document").ready(function() {
     recognition.maxAlternatives = 1;
 
     $("#btnSpeech").on('click', () => {
-        //  console.log("1");
         $("#btnSpeech").addClass("speech");
         recognition.start();
     });
@@ -29,32 +58,23 @@ $("document").ready(function() {
     recognition.addEventListener('result', (e) => {
         let last = e.results.length - 1;
         let text = e.results[last][0].transcript;
-
-        // addYourMessage(text);       
-        // socket.emit('chat message', text);
         var data = {
             text: text,
-            currentUser: $("#loginUser").text()
+            currentUser: $("#loginUser").text(),
+            currentUserID: $("#loginUser").data("id"),
+            refUser: $("#refUser").text(),
+            refUserID: $("#refUser").data("id")
         };
         socket.emit("send message", data);
     });
 
     recognition.addEventListener('speechend', () => {
-        //  console.log("4");
         recognition.stop();
     });
 
     recognition.addEventListener('error', (e) => {
-        //  console.log("5");
         $("#btnSpeech").removeClass("speech");
-        // outputBot.textContent = 'Error: ' + e.error;
     });
-
-    // var addYourMessage = (text) => {
-    //     $('<div class="message message-personal">' + text + '</div>').appendTo($('.mCSB_container')).addClass('new');
-    //     updateScrollbar();
-    // }
-
 
     $messageForm.submit(function(e) {
         e.preventDefault();
@@ -66,12 +86,14 @@ $("document").ready(function() {
     $userForm.submit(function(e) {
         e.preventDefault();
         socket.emit("new user", $username.val(), function(data) {
-            // console.log(data);
+
             if (data.isvalid) {
-                //console.log(data.username);
+
                 $("#loginUser").text(data.username);
+                $("#loginUser").attr("data-id", data.userID);
                 $userFormArea.hide();
                 $messageArea.show();
+                $(".welcome").show();
             }
         });
         $username.val('');
@@ -89,29 +111,43 @@ $("document").ready(function() {
     }
 
     socket.on("new message", function(data) {
-        $("#btnSpeech").removeClass("speech");
-
-        // console.log("actual user:" + data.user);
-        // console.log("login user:" + $("#loginUser").text());
-        var IsCurrentUser = data.user == $("#loginUser").text() ? true : false;
-        if (IsCurrentUser) {
-            console.log("don't speek");
-            $('<div class="message message-personal">' + data.msg + '</div>').appendTo($('.mCSB_container')).addClass('new');
-        } else {
-            console.log("speek");
-            synthVoice(data.msg);
-            $('<div class="message new"><figure class="avatar"><span>' + data.user + '</span></figure>' + data.msg + '</div>').appendTo($('.mCSB_container')).addClass('new');
-            // $('<div class="message new"><figure class="avatar"><span><i class="fa fa-android"></i></span></figure>' + data.msg + '</div>').appendTo($('.mCSB_container')).addClass('new');
-        }
-        updateScrollbar();
+        writeChat(data);
         // $chat.append('<div class="well"><strong>' + data.user + '</strong> : ' + data.msg + '</div>');
     });
 
+    var writeChat = (data) => {
+
+        $("#btnSpeech").removeClass("speech");
+        var IsCurrentUser = data.user == $("#loginUser").text() ? true : false;
+        if (IsCurrentUser) {
+            console.log("don't speek");
+            $('<div class="message message-personal">' + data.text + '</div>').appendTo($('.mCSB_container')).addClass('new');
+        } else {
+            console.log("speek");
+            synthVoice(data.text);
+            $('<div class="message new"><figure class="avatar"><span>' + data.user + '</span></figure>' + data.text + '</div>').appendTo($('.mCSB_container')).addClass('new');
+            // $('<div class="message new"><figure class="avatar"><span><i class="fa fa-android"></i></span></figure>' + data.msg + '</div>').appendTo($('.mCSB_container')).addClass('new');
+        }
+        updateScrollbar();
+
+    };
+
     socket.on("get users", function(data) {
         var html = '';
-        for (i = 0; i < data.length; i++) {
-            html += '<li><i class=" fa-li fa fa-user-circle fa-2x"></i>' + data[i] + '</li>';
-        }
-        $users.html(html);
+
+        data = data.filter(function(user) {
+            return user.username != $("#loginUser").text();
+        });
+
+        if (data.length > 0) {
+            for (i = 0; i < data.length; i++) {
+                html += '<li class="cursor" data-id=' + data[i].userID + ' data-name=' + data[i].username +
+                    '><i class=" fa-li fa fa-user-circle fa-2x"></i>' +
+                    data[i].username + '</li>';
+            }
+
+            $users.html(html);
+        } else
+            $users.html('<li class="noCursor" > No one is online </li>');
     });
 });
