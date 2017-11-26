@@ -54,8 +54,7 @@ app.get('/', function(req, res) {
 });
 
 app.post("/data/getchat", function(req, res) {
-    console.log("1");
-    console.log("request:" + JSON.stringify(req.body.user));
+    / /
     if (req.body.user != null) {
         var whereFilter = { "userID": req.body.user.currentUser, "refUserID": req.body.user.refUser };
         var whereFilter = {
@@ -66,7 +65,6 @@ app.post("/data/getchat", function(req, res) {
         var dataFilter = {};
 
         db.findAllChat("chats", whereFilter, dataFilter).then(function(info) {
-            // console.log("response:" + JSON.stringify(info));
             res.json(info);
         }).catch(function(error) {
             console.log("error response:" + JSON.stringify(error));
@@ -91,7 +89,6 @@ io.sockets.on("connection", function(socket) {
     });
 
     socket.on("send message", function(data) {
-        console.log("send message:" + JSON.stringify(data));
         var filter = {
             "user": data.currentUser,
             "userID": data.currentUserID,

@@ -30,7 +30,7 @@ $("document").ready(function() {
                 if (data != null && data.length > 0) {
                     $('.mCSB_container').html('');
                     $.each(data, function(index, value) {
-                        writeChat(value);
+                        writeChat(value, false);
                     });
                 }
             })
@@ -111,11 +111,11 @@ $("document").ready(function() {
     }
 
     socket.on("new message", function(data) {
-        writeChat(data);
+        writeChat(data, true);
         // $chat.append('<div class="well"><strong>' + data.user + '</strong> : ' + data.msg + '</div>');
     });
 
-    var writeChat = (data) => {
+    var writeChat = (data, speak) => {
 
         $("#btnSpeech").removeClass("speech");
         var IsCurrentUser = data.user == $("#loginUser").text() ? true : false;
@@ -124,7 +124,8 @@ $("document").ready(function() {
             $('<div class="message message-personal">' + data.text + '</div>').appendTo($('.mCSB_container')).addClass('new');
         } else {
             console.log("speek");
-            synthVoice(data.text);
+            if (speak)
+                synthVoice(data.text);
             $('<div class="message new"><figure class="avatar"><span>' + data.user + '</span></figure>' + data.text + '</div>').appendTo($('.mCSB_container')).addClass('new');
             // $('<div class="message new"><figure class="avatar"><span><i class="fa fa-android"></i></span></figure>' + data.msg + '</div>').appendTo($('.mCSB_container')).addClass('new');
         }
