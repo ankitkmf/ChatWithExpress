@@ -6,6 +6,9 @@ var db = require('./models/db');
 var MongoDB = require("mongodb").MongoClient;
 var ObjectId = require("mongodb").ObjectID;
 var app = express();
+const http = require('http'),
+    https = require('https'),
+    fs = require('fs');
 
 app.use(bodyparser.urlencoded({ extended: true }));
 app.use(bodyparser.json());
@@ -27,9 +30,19 @@ app.use(require('express-session')({
 var users = [],
     connection = [];
 
-const server = app.listen(3000, () => {
-    console.log('server listening on port %d in %s mode', server.address().port, app.settings.env);
+const httpsOptions = {
+    key: fs.readFileSync('./ssl/privatekey.pem'),
+    cert: fs.readFileSync('./ssl/certificate.pem')
+}
+
+var server = https.createServer(httpsOptions, app).listen(3000, function() {
+    console.log("Express server listening on port " + 3000);
 });
+
+
+// const server = app.listen(3000, () => {
+//     console.log('server listening on port %d in %s mode', server.address().port, app.settings.env);
+// });
 const io = require('socket.io')(server);
 
 let authenticationMiddleware = function(req, res, next) {
@@ -54,7 +67,6 @@ app.get('/', function(req, res) {
 });
 
 app.post("/data/getchat", function(req, res) {
-    / /
     if (req.body.user != null) {
         var whereFilter = { "userID": req.body.user.currentUser, "refUserID": req.body.user.refUser };
         var whereFilter = {
