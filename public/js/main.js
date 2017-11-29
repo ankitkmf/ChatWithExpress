@@ -10,25 +10,25 @@ $("document").ready(function() {
     var $users = $("#users");
 
     $("#messageArea").on("click", "li.cursor", function() {
-        console.log($(this).data("id"));
-        console.log($(this).data("name"));
         $(".chat").show();
         $("#refUser").text($(this).data("name"));
         $("#refUser").attr("data-id", $(this).data("id"));
 
         var data = {
-            currentUser: $("#loginUser").data("id"),
-            refUser: $(this).data("id")
-        }
-
+                currentUser: $("#loginUser").data("id"),
+                refUser: $(this).data("id")
+            }
+            //$(this).parent
+            //$(this).addClass("active");
+        $('.mCSB_container').html('');
         $.ajax({
                 method: "Post",
                 url: "/data/getchat",
                 data: { user: data }
             })
             .done(function(data) {
+
                 if (data != null && data.length > 0) {
-                    $('.mCSB_container').html('');
                     $.each(data, function(index, value) {
                         writeChat(value, false);
                     });
@@ -41,6 +41,15 @@ $("document").ready(function() {
     });
     $("#chatMessage").mCustomScrollbar({
         theme: "dark-3"
+    });
+
+    $('.enterChat').on('keydown', function(e) {
+        if (e.which == 13) {
+            e.preventDefault();
+            var text = $(this).val();
+            sendMessage(text);
+            $(this).val('');
+        }
     });
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -58,14 +67,7 @@ $("document").ready(function() {
     recognition.addEventListener('result', (e) => {
         let last = e.results.length - 1;
         let text = e.results[last][0].transcript;
-        var data = {
-            text: text,
-            currentUser: $("#loginUser").text(),
-            currentUserID: $("#loginUser").data("id"),
-            refUser: $("#refUser").text(),
-            refUserID: $("#refUser").data("id")
-        };
-        socket.emit("send message", data);
+        sendMessage(text);
     });
 
     recognition.addEventListener('speechend', () => {
@@ -131,6 +133,18 @@ $("document").ready(function() {
         }
         updateScrollbar();
 
+    };
+
+    var sendMessage = (text) => {
+
+        var data = {
+            text: text,
+            currentUser: $("#loginUser").text(),
+            currentUserID: $("#loginUser").data("id"),
+            refUser: $("#refUser").text(),
+            refUserID: $("#refUser").data("id")
+        };
+        socket.emit("send message", data);
     };
 
     socket.on("get users", function(data) {

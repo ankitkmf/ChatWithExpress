@@ -68,15 +68,17 @@ app.get('/', function(req, res) {
 
 app.post("/data/getchat", function(req, res) {
     if (req.body.user != null) {
-        var whereFilter = { "userID": req.body.user.currentUser, "refUserID": req.body.user.refUser };
+        // var whereFilter = { "userID": req.body.user.currentUser, "refUserID": req.body.user.refUser };
         var whereFilter = {
             $or: [{ "userID": req.body.user.currentUser, "refUserID": req.body.user.refUser },
                 { "userID": req.body.user.refUser, "refUserID": req.body.user.currentUser }
             ]
         };
         var dataFilter = {};
+        // console.log("getchat:" + JSON.stringify(whereFilter));
 
         db.findAllChat("chats", whereFilter, dataFilter).then(function(info) {
+            // console.log("getchat json:" + JSON.stringify(info));
             res.json(info);
         }).catch(function(error) {
             console.log("error response:" + JSON.stringify(error));
