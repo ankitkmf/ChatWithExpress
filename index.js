@@ -109,6 +109,7 @@ io.sockets.on("connection", function(socket) {
             "refUser": data.refUser,
             "refUserID": data.refUserID,
             "text": data.text,
+            "isRead": false,
             "date": new Date().toISOString(),
         };
         db.Insert("chats", filter).then(function(info) {
@@ -117,7 +118,7 @@ io.sockets.on("connection", function(socket) {
             //  res.json(false);
         });
 
-        io.sockets.emit("new message", { text: data.text, user: socket.username });
+        io.sockets.emit("new message", { id: data.currentUserID, text: data.text, user: socket.username });
     });
 
     socket.on("new user", function(data, callback) {
