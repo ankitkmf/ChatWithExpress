@@ -48,7 +48,7 @@ $("document").ready(function() {
     });
 
     $('.enterChat').on('keydown', function(e) {
-        if (e.which == 13) {
+        if (e.which == 13 && $(this).val() != '') {
             e.preventDefault();
             var text = $(this).val();
             sendMessage(text);
@@ -91,16 +91,18 @@ $("document").ready(function() {
 
     $userForm.submit(function(e) {
         e.preventDefault();
-        socket.emit("new user", $username.val(), function(data) {
-            if (data.isvalid) {
+        if ($username.val() != '') {
+            socket.emit("new user", $username.val(), function(data) {
+                // if (data.isvalid) {
                 $("#loginUser").text(data.username);
                 $("#loginUser").attr("data-id", data.userID);
                 $userFormArea.hide();
                 $messageArea.show();
                 $(".welcome").show();
-            }
-        });
-        $username.val('');
+                //   }
+            });
+            $username.val('');
+        }
     });
 
     function synthVoice(text) {
@@ -122,22 +124,22 @@ $("document").ready(function() {
     var writeChat = (data, speak) => {
 
         $("#btnSpeech").removeClass("speech");
-        var IsCurrentUser = data.user == $("#loginUser").text() ? true : false;
+        var IsCurrentUser = data.sender == $("#loginUser").text() ? true : false;
         var selectedUser = $(".onlieUser>ul").find("li.active").data("name");
         if (IsCurrentUser) {
             console.log("don't speek");
-            $('<div class="message message-personal">' + data.text + '</div>').appendTo($('.mCSB_container')).addClass('new');
+            $('<div class="message message-personal">' + data.message + '</div>').appendTo($('.mCSB_container')).addClass('new');
         } else {
-            var showMsgCount = data.user == selectedUser ? false : true;
+            var showMsgCount = data.sender == selectedUser ? false : true;
             if (showMsgCount) {
-                var value = $("#" + data.id + "").data("badge");
+                var value = $("#" + data._id + "").data("badge");
                 value = value != null || value != undefined ? parseInt(value) : 0;
-                $("#" + data.id + "").attr("data-badge", ++value);
+                $("#" + data._id + "").attr("data-badge", ++value);
             } else {
                 console.log("speek");
                 if (speak)
-                    synthVoice(data.text);
-                $('<div class="message new"><figure class="avatar"><span>' + data.user + '</span></figure>' + data.text + '</div>').appendTo($('.mCSB_container')).addClass('new');
+                    synthVoice(data.message);
+                $('<div class="message new"><figure class="avatar"><span>' + data.sender + '</span></figure>' + data.message + '</div>').appendTo($('.mCSB_container')).addClass('new');
             }
         }
         updateScrollbar();
@@ -165,9 +167,17 @@ $("document").ready(function() {
 
         if (data.length > 0) {
             for (i = 0; i < data.length; i++) {
-                html += '<li class="cursor badge1"  id=' + data[i].userID + ' data-id=' + data[i].userID + ' data-name=' + data[i].username +
-                    '><i class=" fa-li fa fa-user-circle fa-2x"></i>' +
-                    data[i].username + '</li>';
+                console.log(JSON.stringify(data[i]));
+                if (data[i].unreadMsgCount > '0') {
+                    html += '<li class="cursor badge1"  id=' + data[i].userID + ' data-id=' + data[i].userID +
+                        ' data-name=' + data[i].username + ' data-badge=' + data[i].unreadMsgCount +
+                        '><i class=" fa-li fa fa-user-circle fa-2x ' + data[i].status + '"></i>' +
+                        data[i].username + '</li>';
+                } else {
+                    html += '<li class="cursor badge1"  id=' + data[i].userID + ' data-id=' + data[i].userID + ' data-name=' + data[i].username +
+                        '><i class=" fa-li fa fa-user-circle fa-2x ' + data[i].status + '"></i>' +
+                        data[i].username + '</li>';
+                }
             }
 
             $users.html(html);

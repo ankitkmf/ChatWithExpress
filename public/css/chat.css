@@ -491,6 +491,25 @@ h3 {
     position: initial !important;
 }
 
+i.fa-li.fa.fa-user-circle.online {
+    color: #12c022;
+}
+
+i.fa-li.fa.fa-user-circle.offline {
+    color: #fff;
+}
+
+
+/* .onlieUser li>i.active {
+    position: initial !important;
+    color: #7ae728;
+}
+
+.onlieUser li>i.deactive {
+    position: initial !important;
+    color: #fff;
+} */
+
 .fa-ul>li {
     margin-top: 9px !important;
     cursor: pointer !important;

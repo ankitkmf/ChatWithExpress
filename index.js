@@ -5,6 +5,8 @@ var bodyparser = require("body-parser");
 var db = require('./models/db');
 var MongoDB = require("mongodb").MongoClient;
 var ObjectId = require("mongodb").ObjectID;
+var uniqid = require('uniqid');
+var lodash = require('lodash');
 var app = express();
 const http = require('http'),
     https = require('https'),
@@ -27,7 +29,7 @@ app.use(require('express-session')({
     saveUninitialized: false
 }));
 
-var users = [],
+var activeUsers = [],
     connection = [];
 
 const httpsOptions = {
@@ -39,25 +41,7 @@ var server = https.createServer(httpsOptions, app).listen(3000, function() {
     console.log("Express server listening on port " + 3000);
 });
 
-
-// const server = app.listen(3000, () => {
-//     console.log('server listening on port %d in %s mode', server.address().port, app.settings.env);
-// });
 const io = require('socket.io')(server);
-
-let authenticationMiddleware = function(req, res, next) {
-    res.locals.errorMsg = req.flash('error')[0];
-    res.locals.successMsg = req.flash('success')[0];
-    if (req.session) {
-        req.session.redirectUrl = req.originalUrl || req.url;
-    }
-    if (req.isAuthenticated()) {
-        res.locals.user = req.session.user;
-        return next();
-    }
-    req.session.userVisit = req.session.userVisit != null ? ++(req.session.userVisit) : 1;
-    res.redirect('/');
-};
 
 app.get('/', function(req, res) {
     res.render('chat', {
@@ -70,18 +54,15 @@ app.post("/data/getchat", function(req, res) {
     if (req.body.user != null) {
         // var whereFilter = { "userID": req.body.user.currentUser, "refUserID": req.body.user.refUser };
         var whereFilter = {
-            $or: [{ "userID": req.body.user.currentUser, "refUserID": req.body.user.refUser },
-                { "userID": req.body.user.refUser, "refUserID": req.body.user.currentUser }
+            $or: [{ "senderID": req.body.user.currentUser, "receiverID": req.body.user.refUser },
+                { "senderID": req.body.user.refUser, "receiverID": req.body.user.currentUser }
             ]
         };
         var dataFilter = {};
-        // console.log("getchat:" + JSON.stringify(whereFilter));
-
         db.findAllChat("chats", whereFilter, dataFilter).then(function(info) {
-            // console.log("getchat json:" + JSON.stringify(info));
             res.json(info);
         }).catch(function(error) {
-            console.log("error response:" + JSON.stringify(error));
+            //  console.log("error response:" + JSON.stringify(error));
             res.json(false);
         });
     } else
@@ -94,31 +75,50 @@ io.sockets.on("connection", function(socket) {
     connection.push(socket);
     console.log("connected: %s socket", connection.length);
     socket.on("disconnect", function(data) {
-        users = users.filter(function(user) {
+        var user = {
+            username: socket.username,
+            userID: socket.userID,
+            status: "offline"
+        };
+        // activeUsers = activeUsers.map((current) => {
+        //     return {
+        //         username: current.username,
+        //         userID: current.userID,
+        //         status: current.userID === user.userID ? user.status : current.status
+        //     }
+        // });
+        activeUsers = activeUsers.filter(function(user) {
             return user.username != socket.username;
         });
-        updateUsername();
+        //  console.log("disconnect activeUsers:" + JSON.stringify(activeUsers));
+        updateUsername(user);
         connection.splice(connection.indexOf(socket), 1);
         console.log("Disconnected: %s socket", connection.length);
     });
 
     socket.on("send message", function(data) {
         var filter = {
-            "user": data.currentUser,
-            "userID": data.currentUserID,
-            "refUser": data.refUser,
-            "refUserID": data.refUserID,
-            "text": data.text,
+            "sender": data.currentUser,
+            "senderID": data.currentUserID,
+            "receiver": data.refUser,
+            "receiverID": data.refUserID,
+            "message": data.text,
             "isRead": false,
             "date": new Date().toISOString(),
         };
-        db.Insert("chats", filter).then(function(info) {
+        db.InsertChat("chats", filter).then(function(info) {
             // res.json(true);
         }).catch(function(error) {
             //  res.json(false);
         });
 
-        io.sockets.emit("new message", { id: data.currentUserID, text: data.text, user: socket.username });
+        io.sockets.emit("new message", {
+            _id: data.currentUserID,
+            message: data.text,
+            sender: socket.username,
+            receiverID: data.refUserID,
+            receiver: data.refUser
+        });
     });
 
     socket.on("new user", function(data, callback) {
@@ -128,40 +128,76 @@ io.sockets.on("connection", function(socket) {
             if (results != undefined && results._id != undefined) {
                 userID = results._id;
                 var user = {
-                    isvalid: true,
+                    //  isvalid: true,
                     username: data,
-                    userID: userID
+                    userID: userID,
+                    status: "online"
                 };
                 callback(user);
                 socket.username = data;
+                socket.userID = userID;
                 // users.push(socket.username);
-                users.push(user);
-                updateUsername();
+                activeUsers.push(user);
+                // console.log("find user");
+                updateUsername(user);
             } else {
-                var filter = { "name": data, "image": "", "dateTime": new Date().toDateString() };
-                db.Insert("users", filter).then(function(info) {
-
+                var filter = {
+                    "_id": uniqid(),
+                    "name": data,
+                    "image": "",
+                    "dateTime": new Date().toDateString()
+                };
+                db.InsertUser("users", filter).then(function(info) {
+                    //  console.log("info:" + JSON.stringify(info));
                     userID = info.resultID;
                     var user = {
-                        isvalid: true,
+                        //  isvalid: true,
                         username: data,
-                        userID: userID
+                        userID: userID,
+                        status: "online"
                     };
                     callback(user);
                     socket.username = data;
+                    socket.userID = userID;
                     //users.push(socket.username);
-                    users.push(user);
-
-                    updateUsername();
+                    activeUsers.push(user);
+                    // console.log("insert user");
+                    updateUsername(user);
                 })
             }
         }).catch(function(err) {
-            // res.render('emailverified', { layout: 'layout', title: 'Email Verification Page', isError: "true" });
+            //
         });
     });
 
-    function updateUsername() {
-        io.sockets.emit("get users", users)
+    function updateUsername(user) {
+        db.getAllUserUnreadMsgCount('users').then(function(results) {
+            var users = [];
+            if (results != null) {
+                results.map((current) => {
+                    var count = 0;
+                    var status = "offline";
+                    if (current.childs != null && current.childs.length > 0) {
+                        count = current.childs.reduce(function(prevVal, elem) {
+                            if (elem.receiverID == user.userID)
+                                prevVal++;
+                            else
+                                prevVal = 0;
+                            return prevVal;
+                        }, 0);
+                    }
+                    status = lodash.filter(activeUsers, x => x.userID == current._id);
+                    return users.push({
+                        username: current.name,
+                        userID: current._id,
+                        unreadMsgCount: count,
+                        status: (status != null && status.length > 0) ? "online" : "offline"
+                    });
+                });
+                // console.log("updateUsername:" + JSON.stringify(users));
+                io.sockets.emit("get users", users);
+            }
+        });
     }
 });
 
