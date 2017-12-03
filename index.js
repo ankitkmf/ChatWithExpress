@@ -106,6 +106,8 @@ io.sockets.on("connection", function(socket) {
             "isRead": false,
             "date": new Date().toISOString(),
         };
+
+        //  console.log("Send message:" + JSON.stringify(filter));
         db.InsertChat("chats", filter).then(function(info) {
             // res.json(true);
         }).catch(function(error) {

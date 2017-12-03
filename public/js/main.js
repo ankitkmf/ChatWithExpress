@@ -129,7 +129,7 @@ $("document").ready(function() {
         if (IsCurrentUser) {
             console.log("don't speek");
             $('<div class="message message-personal">' + data.message + '</div>').appendTo($('.mCSB_container')).addClass('new');
-        } else {
+        } else if (data.receiverID == $("#loginUser").data("id")) {
             var showMsgCount = data.sender == selectedUser ? false : true;
             if (showMsgCount) {
                 var value = $("#" + data._id + "").data("badge");
@@ -153,7 +153,7 @@ $("document").ready(function() {
             currentUser: $("#loginUser").text(),
             currentUserID: $("#loginUser").data("id"),
             refUser: $("#refUser").text(),
-            refUserID: $("#refUser").data("id")
+            refUserID: $("#users").find(".active").attr("id") // $("#refUser").data("id")
         };
         socket.emit("send message", data);
     };
@@ -167,7 +167,7 @@ $("document").ready(function() {
 
         if (data.length > 0) {
             for (i = 0; i < data.length; i++) {
-                console.log(JSON.stringify(data[i]));
+                // console.log(JSON.stringify(data[i]));
                 if (data[i].unreadMsgCount > '0') {
                     html += '<li class="cursor badge1"  id=' + data[i].userID + ' data-id=' + data[i].userID +
                         ' data-name=' + data[i].username + ' data-badge=' + data[i].unreadMsgCount +
